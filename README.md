@@ -1,0 +1,2 @@
+# VRoot
+Termux上的便携proot封装脚本，用户无需记住proot的大量参数即可运行proot
