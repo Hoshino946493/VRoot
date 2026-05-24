@@ -1,0 +1,132 @@
+#!/data/data/com.termux/files/usr/bin/bash -e
+
+mkdir -p ~/.vroot/containers
+
+show_help() {
+    cat <<EOF
+用法: $0 <命令> [参数]
+
+命令:
+  msrfs <目录路径> [用户名]      手动选择 rootfs 目录并登录（用户名默认为 root）
+  login, l <容器名> [用户名]     登录 ~/.vroot/containers/ 下的容器（用户名默认为 root）
+  h, help                        显示此帮助信息
+
+示例:
+  $0 msrfs ~/ubuntu-fs sensei
+  $0 login ubuntu-fs
+  $0 l debian-fs root
+EOF
+}
+
+# 启动 proot 的函数
+start_proot() {
+    local target_root="$1"
+    local target_user="$2"
+
+    # 检查目标目录是否存在
+    if [ ! -d "$target_root" ]; then
+        echo "错误：目录 '$target_root' 不存在"
+        exit 1
+    fi
+
+    # 清理可能干扰的环境变量
+    unset LD_PRELOAD
+
+    # 为旧版 Android（< 8）生成 resolv.conf
+    add_resolv_conf() {
+        local android_version
+        android_version=$(getprop ro.build.version.release 2>/dev/null || echo "0")
+        local major_version="${android_version%%.*}"
+
+        if [ "$major_version" -lt 8 ] 2>/dev/null; then
+            if command -v getprop >/dev/null 2>&1; then
+                echo "检测到 Android 版本 < 8，正在生成 DNS 配置..."
+                getprop | sed -n -e 's/^\[net\.dns[0-9]*\]: \[\(.*\)\]/\1/p' \
+                    | sed '/^\s*$/d' \
+                    | sed 's/^/nameserver /' > "$target_root/etc/resolv.conf"
+            fi
+        fi
+    }
+
+    add_resolv_conf
+
+    # 根据是否提供用户名，选择不同的 shell 命令
+    if [ -n "$target_user" ]; then
+        # 有用户名：执行 su - 用户名
+        exec proot \
+            --link2symlink \
+            -0 \
+            -r "$target_root/" \
+            -b /dev/ \
+            -b /sys/ \
+            -b /proc/ \
+            -b /sdcard \
+            -b /storage \
+            -b "$HOME" \
+            -w /home \
+            /usr/bin/env \
+            TMPDIR=/tmp \
+            HOME=/home \
+            PREFIX=/usr \
+            SHELL=/bin/sh \
+            TERM="$TERM" \
+            LANG="${LANG:-C}" \
+            PATH=/bin:/usr/bin:/sbin:/usr/sbin \
+            /bin/sh -c "su - $target_user"
+    else
+        # 无用户名：直接进入登录 shell
+        exec proot \
+            --link2symlink \
+            -0 \
+            -r "$target_root/" \
+            -b /dev/ \
+            -b /sys/ \
+            -b /proc/ \
+            -b /sdcard \
+            -b /storage \
+            -b "$HOME" \
+            -w /home \
+            /usr/bin/env \
+            TMPDIR=/tmp \
+            HOME=/home \
+            PREFIX=/usr \
+            SHELL=/bin/sh \
+            TERM="$TERM" \
+            LANG="${LANG:-C}" \
+            PATH=/bin:/usr/bin:/sbin:/usr/sbin \
+            /bin/sh --login
+    fi
+}
+
+# 主逻辑
+case "$1" in
+    h|help)
+        show_help
+        exit 0
+        ;;
+    msrfs)
+        # 手动选择 rootfs：msrfs <路径> [用户名]
+        if [ -z "$2" ]; then
+            echo "错误：请提供 rootfs 目录路径"
+            echo "示例: $0 msrfs ~/ubuntu-fs sensei"
+            exit 1
+        fi
+        start_proot "$2" "$3"
+        ;;
+    login|l)
+        # 登录容器：login <容器名> [用户名]
+        if [ -z "$2" ]; then
+            echo "错误：请提供容器名"
+            echo "可用容器："
+            ls -1 ~/.vroot/containers/ 2>/dev/null | sed 's/^/  - /'
+            exit 1
+        fi
+        # 修复：移除 local，直接使用变量
+        container_path="$HOME/.vroot/containers/$2"
+        start_proot "$container_path" "$3"
+        ;;
+    *)
+        # 兼容旧用法：直接传路径 [用户名]
+        start_proot "$1" "$2"
+        ;;
+esac
