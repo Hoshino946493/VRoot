@@ -33,10 +33,11 @@ cp vroot $PREFIX/bin/
 ### 使用方式
 
 vroot 提供三种核心操作命令：
-命令   简写   说明
-msrfs  [用户名]   -   手动指定任意 RootFS 目录登录容器，用户名可选，默认为 root
-login  [用户名]   l   快速登录存放于 ~/.vroot/containers 的容器
-help   h   查看帮助信息
+| 命令  | 简写 | 说明 |
+| :--- | :--- | :--- |
+| `msrfs` | - | 手动指定任意 RootFS 目录登录容器，用户名可选，默认为 root |
+| `login` | `l` | 快速登录存放于 `~/.vroot/containers` 的容器 |
+| `help` | `h` | 查看帮助信息 |
 
 ### 额外用法
 - 直接传入目录路径：vroot  [用户名]，兼容旧版调用逻辑。
