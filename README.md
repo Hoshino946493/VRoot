@@ -24,7 +24,7 @@ VRoot 是一款专为 Termux 设计的轻量 PRoot 容器启动脚本。
 在 Termux 中执行以下命令：
 
 ```bash
-git clone https://github.com/你的用户名/VRoot.git
+git clone https://github.com/Hoshino946493/VRoot.git
 cd VRoot
 chmod +x vroot
 cp vroot $PREFIX/bin/
