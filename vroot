@@ -1,101 +1,325 @@
 #!/data/data/com.termux/files/usr/bin/bash -e
 
-mkdir -p ~/.vroot/containers
+# ============================================
+# VRoot - Termux PRoot 容器启动工具
+# 作者: Hoshino946493
+# 版本: 1.0.2
+# ============================================
 
+# 配置文件路径
+readonly CONFIG_DIR="$HOME/.vroot"
+readonly LANG_CONFIG="$CONFIG_DIR/lang.conf"
+
+# 确保配置目录存在
+mkdir -p "$CONFIG_DIR"
+
+# 初始化语言配置
+init_language() {
+    # 如果配置文件不存在，提示用户选择语言
+    if [ ! -f "$LANG_CONFIG" ]; then
+        clear
+        echo "VRoot - 首次运行配置 / First run setup"
+        echo ""
+        echo "请选择语言 / Select language:"
+        echo "  1) zh_CN (中文)"
+        echo "  2) en_US (English)"
+        echo ""
+        read -p "请输入选项 / Enter choice [1/2]: " lang_choice
+        
+        case "$lang_choice" in
+            1)
+                cat > "$LANG_CONFIG" << EOF
+# VRoot Language Configuration
+# 1 = zh_CN (Chinese)
+# 2 = en_US (English)
+vroot_lang=1
+EOF
+                echo ""
+                echo "✓ 已设置为中文"
+                sleep 1
+                ;;
+            2)
+                cat > "$LANG_CONFIG" << EOF
+# VRoot Language Configuration
+# 1 = zh_CN (Chinese)
+# 2 = en_US (English)
+vroot_lang=2
+EOF
+                echo ""
+                echo "✓ Language set to English"
+                sleep 1
+                ;;
+            *)
+                cat > "$LANG_CONFIG" << EOF
+# VRoot Language Configuration
+# 1 = zh_CN (Chinese)
+# 2 = en_US (English)
+vroot_lang=1
+EOF
+                echo ""
+                echo "默认选择: 中文 / Default: Chinese"
+                sleep 1
+                ;;
+        esac
+        clear
+    fi
+    
+    # 读取配置文件（只读取 vroot_lang 的值）
+    if [ -f "$LANG_CONFIG" ]; then
+        # 使用 grep 和 cut 提取 vroot_lang 的值
+        local lang_value=$(grep "^vroot_lang=" "$LANG_CONFIG" | cut -d'=' -f2)
+        if [ -n "$lang_value" ]; then
+            vroot_lang="$lang_value"
+        else
+            vroot_lang="1"  # 默认中文
+        fi
+    else
+        vroot_lang="1"
+    fi
+    
+    # 根据 vroot_lang 的值确定语言
+    if [ "$vroot_lang" = "1" ]; then
+        CURRENT_LANG="zh_CN"
+    else
+        CURRENT_LANG="en_US"
+    fi
+}
+
+# 加载语言配置
+init_language
+
+# 语言字符串定义
+if [ "$CURRENT_LANG" = "zh_CN" ]; then
+    # 中文语言包
+    readonly STR_INFO="信息"
+    readonly STR_OK="成功"
+    readonly STR_WARN="警告"
+    readonly STR_ERROR="错误"
+    readonly STR_STEP="步骤"
+    readonly STR_ROOTFS="RootFS 目录"
+    readonly STR_USER="用户"
+    readonly STR_USER_ROOT="root"
+    readonly STR_DEFAULT_USER="root (默认)"
+    readonly STR_STARTING="正在启动容器..."
+    readonly STR_DIR_NOT_EXIST="目录不存在"
+    readonly STR_PROVIDE_PATH="请提供 rootfs 目录路径"
+    readonly STR_PROVIDE_NAME="请提供容器名"
+    readonly STR_CONTAINER_NOT_EXIST="容器不存在"
+    readonly STR_EXAMPLE="示例"
+    readonly STR_COMMANDS="命令"
+    readonly STR_USAGE="用法"
+    readonly STR_DESCRIPTION="VRoot - Termux PRoot 容器启动工具"
+    readonly STR_MSRFS_DESC="手动指定 rootfs 目录并登录"
+    readonly STR_LOGIN_DESC="登录 ~/.vroot/containers/ 下的容器"
+    readonly STR_HELP_DESC="显示此帮助信息"
+    readonly STR_EXAMPLE_CUSTOM="使用自定义路径登录"
+    readonly STR_EXAMPLE_LOGIN="登录统一目录下的容器"
+    readonly STR_EXAMPLE_SHORT="简写形式"
+    readonly STR_EXAMPLE_LEGACY="兼容旧用法"
+    readonly STR_CONTAINER_DIR="容器目录"
+    readonly STR_AVAILABLE_CONTAINERS="可用容器"
+    readonly STR_DNS_DETECT="检测到 Android"
+    readonly STR_DNS_GENERATE="正在生成 DNS 配置..."
+    readonly STR_DNS_SUCCESS="DNS 配置已生成"
+    readonly STR_NO_CONTAINERS="(无容器)"
+    readonly STR_CHANGE_LANG="修改语言: 编辑 ~/.vroot/lang.conf，将 vroot_lang 改为 1(中文) 或 2(英文)"
+else
+    # English language pack
+    readonly STR_INFO="INFO"
+    readonly STR_OK="OK"
+    readonly STR_WARN="WARN"
+    readonly STR_ERROR="ERROR"
+    readonly STR_STEP="STEP"
+    readonly STR_ROOTFS="RootFS directory"
+    readonly STR_USER="User"
+    readonly STR_USER_ROOT="root"
+    readonly STR_DEFAULT_USER="root (default)"
+    readonly STR_STARTING="Starting container..."
+    readonly STR_DIR_NOT_EXIST="Directory does not exist"
+    readonly STR_PROVIDE_PATH="Please provide rootfs directory path"
+    readonly STR_PROVIDE_NAME="Please provide container name"
+    readonly STR_CONTAINER_NOT_EXIST="Container does not exist"
+    readonly STR_EXAMPLE="Example"
+    readonly STR_COMMANDS="Commands"
+    readonly STR_USAGE="Usage"
+    readonly STR_DESCRIPTION="VRoot - Termux PRoot Container Launcher"
+    readonly STR_MSRFS_DESC="Manually specify rootfs directory and login"
+    readonly STR_LOGIN_DESC="Login to container in ~/.vroot/containers/"
+    readonly STR_HELP_DESC="Show this help message"
+    readonly STR_EXAMPLE_CUSTOM="Login with custom path"
+    readonly STR_EXAMPLE_LOGIN="Login to container in unified directory"
+    readonly STR_EXAMPLE_SHORT="Shortcut form"
+    readonly STR_EXAMPLE_LEGACY="Legacy usage compatibility"
+    readonly STR_CONTAINER_DIR="Container directory"
+    readonly STR_AVAILABLE_CONTAINERS="Available containers"
+    readonly STR_DNS_DETECT="Detected Android"
+    readonly STR_DNS_GENERATE="Generating DNS configuration..."
+    readonly STR_DNS_SUCCESS="DNS configuration generated"
+    readonly STR_NO_CONTAINERS="(No containers)"
+    readonly STR_CHANGE_LANG="Change language: edit ~/.vroot/lang.conf, set vroot_lang to 1(Chinese) or 2(English)"
+fi
+
+# 强制启用彩色输出（Termux 都支持）
+USE_COLOR=true
+
+# 颜色定义
+if [ "$USE_COLOR" = true ]; then
+    readonly RED='\033[0;31m'
+    readonly GREEN='\033[0;32m'
+    readonly YELLOW='\033[1;33m'
+    readonly BLUE='\033[0;34m'
+    readonly PURPLE='\033[0;35m'
+    readonly CYAN='\033[0;36m'
+    readonly WHITE='\033[1;37m'
+    readonly GRAY='\033[0;37m'
+    readonly BOLD='\033[1m'
+    readonly DIM='\033[2m'
+    readonly NC='\033[0m'
+else
+    readonly RED='' GREEN='' YELLOW='' BLUE='' PURPLE='' CYAN='' WHITE='' GRAY='' BOLD='' DIM='' NC=''
+fi
+
+# 彩色输出函数
+print_info() {
+    echo -e "${BLUE}${BOLD}[$STR_INFO]${NC} $1"
+}
+
+print_success() {
+    echo -e "${GREEN}${BOLD}[$STR_OK]${NC} $1"
+}
+
+print_warning() {
+    echo -e "${YELLOW}${BOLD}[$STR_WARN]${NC} $1" >&2
+}
+
+print_error() {
+    echo -e "${RED}${BOLD}[$STR_ERROR]${NC} $1" >&2
+}
+
+print_step() {
+    echo -e "\n${CYAN}>>>${NC} ${BOLD}$1${NC}"
+}
+
+# 创建容器目录
+mkdir -p "$CONFIG_DIR/containers" 2>/dev/null
+
+# 显示帮助信息
 show_help() {
     cat <<EOF
-用法: $0 <命令> [参数]
+${BOLD}$STR_DESCRIPTION${NC}
 
-命令:
-  msrfs <目录路径> [用户名]      手动选择 rootfs 目录并登录（用户名默认为 root）
-  login, l <容器名> [用户名]     登录 ~/.vroot/containers/ 下的容器（用户名默认为 root）
-  h, help                        显示此帮助信息
+${BOLD}$STR_USAGE:${NC} $0 <$STR_COMMANDS> [$STR_EXAMPLE]
 
-示例:
+${BOLD}$STR_COMMANDS:${NC}
+  ${GREEN}msrfs${NC} <$STR_ROOTFS> [$STR_USER]      $STR_MSRFS_DESC
+  ${GREEN}login${NC}, ${GREEN}l${NC} <$STR_EXAMPLE> [$STR_USER]     $STR_LOGIN_DESC
+  ${GREEN}h${NC}, ${GREEN}help${NC}                        $STR_HELP_DESC
+
+${BOLD}$STR_EXAMPLE:${NC}
+  ${DIM}# $STR_EXAMPLE_CUSTOM${NC}
   $0 msrfs ~/ubuntu-fs sensei
+  
+  ${DIM}# $STR_EXAMPLE_LOGIN${NC}
   $0 login ubuntu-fs
+  
+  ${DIM}# $STR_EXAMPLE_SHORT${NC}
   $0 l debian-fs root
+  
+  ${DIM}# $STR_EXAMPLE_LEGACY${NC}
+  $0 ~/alpine-fs
+
+${BOLD}$STR_CONTAINER_DIR:${NC} ~/.vroot/containers/
+
+${DIM}$STR_CHANGE_LANG${NC}
 EOF
 }
 
-# 启动 proot 的函数
+# 为旧版 Android 生成 resolv.conf
+add_resolv_conf() {
+    local target_root="$1"
+    
+    # 检查 getprop 命令是否可用
+    if ! command -v getprop >/dev/null 2>&1; then
+        return
+    fi
+    
+    local android_version
+    android_version=$(getprop ro.build.version.release 2>/dev/null | cut -d. -f1 || echo "0")
+    
+    if [[ "$android_version" =~ ^[0-9]+$ ]] && [ "$android_version" -lt 8 ] 2>/dev/null; then
+        print_info "$STR_DNS_DETECT $android_version，$STR_DNS_GENERATE"
+        {
+            getprop | sed -n 's/^\[net\.dns[0-9]*\]: \[\(.*\)\]/\1/p' | head -3
+            echo "nameserver 8.8.8.8"
+            echo "nameserver 8.8.4.4"
+        } | while read -r dns; do
+            [ -n "$dns" ] && echo "nameserver $dns"
+        done | sort -u > "$target_root/etc/resolv.conf" 2>/dev/null
+        print_success "$STR_DNS_SUCCESS"
+    fi
+}
+
+# 启动 proot
 start_proot() {
     local target_root="$1"
     local target_user="$2"
 
-    # 检查目标目录是否存在
+    # 检查目标目录
     if [ ! -d "$target_root" ]; then
-        echo "错误：目录 '$target_root' 不存在"
+        print_error "$STR_DIR_NOT_EXIST: '$target_root'"
         exit 1
     fi
-
-    # 清理可能干扰的环境变量
-    unset LD_PRELOAD
-
-    # 为旧版 Android（< 8）生成 resolv.conf
-    add_resolv_conf() {
-        local android_version
-        android_version=$(getprop ro.build.version.release 2>/dev/null || echo "0")
-        local major_version="${android_version%%.*}"
-
-        if [ "$major_version" -lt 8 ] 2>/dev/null; then
-            if command -v getprop >/dev/null 2>&1; then
-                echo "检测到 Android 版本 < 8，正在生成 DNS 配置..."
-                getprop | sed -n -e 's/^\[net\.dns[0-9]*\]: \[\(.*\)\]/\1/p' \
-                    | sed '/^\s*$/d' \
-                    | sed 's/^/nameserver /' > "$target_root/etc/resolv.conf"
-            fi
-        fi
-    }
-
-    add_resolv_conf
-
-    # 根据是否提供用户名，选择不同的 shell 命令
+    
+    print_success "$STR_ROOTFS: $target_root"
+    
     if [ -n "$target_user" ]; then
-        # 有用户名：执行 su - 用户名
-        exec proot \
-            --link2symlink \
-            -0 \
-            -r "$target_root/" \
-            -b /dev/ \
-            -b /sys/ \
-            -b /proc/ \
-            -b /sdcard \
-            -b /storage \
-            -b "$HOME" \
-            -w /home \
-            /usr/bin/env \
-            TMPDIR=/tmp \
-            HOME=/home \
-            PREFIX=/usr \
-            SHELL=/bin/sh \
-            TERM="$TERM" \
-            LANG="${LANG:-C}" \
-            PATH=/bin:/usr/bin:/sbin:/usr/sbin \
-            /bin/sh -c "su - $target_user"
+        print_info "$STR_USER: $target_user"
     else
-        # 无用户名：直接进入登录 shell
-        exec proot \
-            --link2symlink \
-            -0 \
-            -r "$target_root/" \
-            -b /dev/ \
-            -b /sys/ \
-            -b /proc/ \
-            -b /sdcard \
-            -b /storage \
-            -b "$HOME" \
-            -w /home \
-            /usr/bin/env \
-            TMPDIR=/tmp \
-            HOME=/home \
-            PREFIX=/usr \
-            SHELL=/bin/sh \
-            TERM="$TERM" \
-            LANG="${LANG:-C}" \
-            PATH=/bin:/usr/bin:/sbin:/usr/sbin \
-	    # 修改: 原先--login的写法会报错
-            /bin/sh -c "su - root"
+        print_info "$STR_USER: $STR_DEFAULT_USER"
+    fi
+    
+    # 清理环境变量
+    unset LD_PRELOAD
+    
+    # 生成 DNS 配置
+    add_resolv_conf "$target_root"
+    
+    print_step "$STR_STARTING"
+    
+    # 构建 proot 命令
+    local proot_cmd="proot --link2symlink -0 -r \"$target_root/\""
+    proot_cmd="$proot_cmd -b /dev/ -b /sys/ -b /proc/ -b /sdcard -b /storage -b \"$HOME\""
+    
+    if [ -n "$target_user" ]; then
+        # 指定用户
+        proot_cmd="$proot_cmd -w \"/home/$target_user\""
+        proot_cmd="$proot_cmd /usr/bin/env TMPDIR=/tmp HOME=\"/home/$target_user\""
+        proot_cmd="$proot_cmd PREFIX=/usr SHELL=/bin/sh TERM=\"$TERM\" LANG=\"${LANG:-C}\""
+        proot_cmd="$proot_cmd PATH=/bin:/usr/bin:/sbin:/usr/sbin"
+        proot_cmd="$proot_cmd /bin/su - \"$target_user\""
+    else
+        # root 用户
+        proot_cmd="$proot_cmd -w /root"
+        proot_cmd="$proot_cmd /usr/bin/env TMPDIR=/tmp HOME=/root"
+        proot_cmd="$proot_cmd PREFIX=/usr SHELL=/bin/sh TERM=\"$TERM\" LANG=\"${LANG:-C}\""
+        proot_cmd="$proot_cmd PATH=/bin:/usr/bin:/sbin:/usr/sbin"
+        proot_cmd="$proot_cmd /bin/sh"
+    fi
+    
+    eval exec "$proot_cmd"
+}
+
+# 列出容器（仅用于提示）
+list_containers() {
+    local containers_dir="$CONFIG_DIR/containers"
+    if [ -d "$containers_dir" ]; then
+        local containers=$(ls -1 "$containers_dir" 2>/dev/null | sed 's/^/  /')
+        if [ -n "$containers" ]; then
+            echo -e "${DIM}$STR_AVAILABLE_CONTAINERS:${NC}"
+            echo "$containers"
+        else
+            echo -e "${DIM}$STR_NO_CONTAINERS${NC}"
+        fi
     fi
 }
 
@@ -106,28 +330,32 @@ case "$1" in
         exit 0
         ;;
     msrfs)
-        # 手动选择 rootfs：msrfs <路径> [用户名]
         if [ -z "$2" ]; then
-            echo "错误：请提供 rootfs 目录路径"
-            echo "示例: $0 msrfs ~/ubuntu-fs sensei"
+            print_error "$STR_PROVIDE_PATH"
+            echo "$STR_EXAMPLE: $0 msrfs ~/ubuntu-fs sensei"
             exit 1
         fi
         start_proot "$2" "$3"
         ;;
     login|l)
-        # 登录容器：login <容器名> [用户名]
         if [ -z "$2" ]; then
-            echo "错误：请提供容器名"
-            echo "可用容器："
-            ls -1 ~/.vroot/containers/ 2>/dev/null | sed 's/^/  - /'
+            print_error "$STR_PROVIDE_NAME"
+            list_containers
             exit 1
         fi
-        # 修复：移除 local，直接使用变量
-        container_path="$HOME/.vroot/containers/$2"
+        container_path="$CONFIG_DIR/containers/$2"
+        if [ ! -d "$container_path" ]; then
+            print_error "$STR_CONTAINER_NOT_EXIST: '$2'"
+            exit 1
+        fi
         start_proot "$container_path" "$3"
         ;;
     *)
-        # 兼容旧用法：直接传路径 [用户名]
+        # 兼容旧用法：直接传路径
+        if [ -z "$1" ]; then
+            show_help
+            exit 0
+        fi
         start_proot "$1" "$2"
         ;;
 esac
