@@ -205,33 +205,31 @@ mkdir -p "$CONFIG_DIR/containers" 2>/dev/null
 
 # 显示帮助信息
 show_help() {
-    cat <<EOF
-${BOLD}$STR_DESCRIPTION${NC}
-
-${BOLD}$STR_USAGE:${NC} $0 <$STR_COMMANDS> [$STR_EXAMPLE]
-
-${BOLD}$STR_COMMANDS:${NC}
-  ${GREEN}msrfs${NC} <$STR_ROOTFS> [$STR_USER]      $STR_MSRFS_DESC
-  ${GREEN}login${NC}, ${GREEN}l${NC} <$STR_EXAMPLE> [$STR_USER]     $STR_LOGIN_DESC
-  ${GREEN}h${NC}, ${GREEN}help${NC}                        $STR_HELP_DESC
-
-${BOLD}$STR_EXAMPLE:${NC}
-  ${DIM}# $STR_EXAMPLE_CUSTOM${NC}
-  $0 msrfs ~/ubuntu-fs sensei
-  
-  ${DIM}# $STR_EXAMPLE_LOGIN${NC}
-  $0 login ubuntu-fs
-  
-  ${DIM}# $STR_EXAMPLE_SHORT${NC}
-  $0 l debian-fs root
-  
-  ${DIM}# $STR_EXAMPLE_LEGACY${NC}
-  $0 ~/alpine-fs
-
-${BOLD}$STR_CONTAINER_DIR:${NC} ~/.vroot/containers/
-
-${DIM}$STR_CHANGE_LANG${NC}
-EOF
+    echo -e "${BOLD}${STR_DESCRIPTION}${NC}"
+    echo -e ""
+    echo -e "${BOLD}${STR_USAGE}:${NC} $0 <${STR_COMMANDS}> [${STR_EXAMPLE}]"
+    echo -e ""
+    echo -e "${BOLD}${STR_COMMANDS}:${NC}"
+    echo -e "  ${GREEN}msrfs${NC} <${STR_ROOTFS}> [${STR_USER}]      ${STR_MSRFS_DESC}"
+    echo -e "  ${GREEN}login${NC}, ${GREEN}l${NC} <${STR_EXAMPLE}> [${STR_USER}]     ${STR_LOGIN_DESC}"
+    echo -e "  ${GREEN}h${NC}, ${GREEN}help${NC}                        ${STR_HELP_DESC}"
+    echo -e ""
+    echo -e "${BOLD}${STR_EXAMPLE}:${NC}"
+    echo -e "  ${DIM}# ${STR_EXAMPLE_CUSTOM}${NC}"
+    echo -e "  $0 msrfs ~/ubuntu-fs sensei"
+    echo -e ""
+    echo -e "  ${DIM}# ${STR_EXAMPLE_LOGIN}${NC}"
+    echo -e "  $0 login ubuntu-fs"
+    echo -e ""
+    echo -e "  ${DIM}# ${STR_EXAMPLE_SHORT}${NC}"
+    echo -e "  $0 l debian-fs root"
+    echo -e ""
+    echo -e "  ${DIM}# ${STR_EXAMPLE_LEGACY}${NC}"
+    echo -e "  $0 ~/alpine-fs"
+    echo -e ""
+    echo -e "${BOLD}${STR_CONTAINER_DIR}:${NC} ~/.vroot/containers/"
+    echo -e ""
+    echo -e "${DIM}${STR_CHANGE_LANG}${NC}"
 }
 
 # 为旧版 Android 生成 resolv.conf
