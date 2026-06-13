@@ -10,6 +10,26 @@ VRoot is a lightweight PRoot container launcher designed specifically for Termux
 - Supports multiple command container management, unified container directory, automatic DNS adaptation for older Android versions
 - Bilingual Chinese/English support with color output
 
+### Project Background
+
+proot-distro v5.0 changed its RootFS source to DockerHub.
+
+In China, that means "unusable".
+
+I didn't want to watch people get driven crazy by proot's complex parameters.
+
+So I wrote VRoot.
+
+A proot wrapper script — typed on a smartwatch.
+
+No parameters to remember. No config to tweak.
+
+`vroot msrfs ~/ubuntu-fs` just works.
+
+If proot-distro is "where the dream ends,"
+
+then VRoot is the ladder I built myself.
+
 ### Features
 
 - Built-in device directory mounting: dev, sys, proc, sdcard, storage, HOME
@@ -97,6 +117,21 @@ VRoot 是一款专为 Termux 设计的轻量 PRoot 容器启动脚本。
 - 封装了全套常用挂载参数与环境变量，无需手动编写复杂 proot 启动命令
 - 支持多命令容器管理、统一容器目录、低版本 Android DNS 自动适配
 - 中英双语支持，彩色输出
+
+### 项目背景
+
+proot-distro v5.0 把 RootFS 源换成了 DockerHub。
+在国内，这等于“不能用”。
+
+我不想看着别人被 proot 的复杂参数逼疯。
+所以我写了 VRoot。
+
+一个在手表上敲出来的 proot 封装脚本。
+不用记参数，不用改配置。
+vroot msrfs ~/ubuntu-fs 就能跑起来。
+
+如果 proot-distro 是“梦结束的地方”，
+那 VRoot 就是我自己重新搭的梯子。
 
 ### 功能特性
 
