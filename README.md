@@ -103,6 +103,12 @@ sed -i 's/vroot_lang=.*/vroot_lang=1/' ~/.vroot/lang.conf
 
 Or edit the ~/.vroot/lang.conf file directly.
 
+## Special Thanks
+
+**Philips** - Thanks for making this smartwatch, which somehow became my development platform.
+
+You probably didn't expect someone to write code on it, but here we are.
+
 License: MIT
 Author: Hoshino946493
 
@@ -206,6 +212,12 @@ sed -i 's/vroot_lang=.*/vroot_lang=1/' ~/.vroot/lang.conf
 ```
 
 或直接编辑 ~/.vroot/lang.conf 文件。
+
+## 鸣谢
+
+**飞利浦** - 感谢你们生产了这块手表，让我能在手腕上完成这个项目。
+
+虽然你们可能不知道有人拿手表写代码，但我确实这么干了。
 
 许可证：MIT
 作者：Hoshino946493
