@@ -30,6 +30,10 @@ If proot-distro is "where the dream ends,"
 
 then VRoot is the ladder I built myself.
 
+**Thanks to proot-distro** — you gave me the inspiration.
+
+The road after v5.0 hasn't been easy, but the path you once paved showed later developers where to look.
+
 ### Features
 
 - Built-in device directory mounting: dev, sys, proc, sdcard, storage, HOME
@@ -138,6 +142,9 @@ vroot msrfs ~/ubuntu-fs 就能跑起来。
 
 如果 proot-distro 是“梦结束的地方”，
 那 VRoot 就是我自己重新搭的梯子。
+
+**感谢 proot-distro** — 是你们给了我灵感。
+虽然 v5.0 之后的路不好走了，但你们曾经铺过的路，让后来者知道方向在哪里。
 
 ### 功能特性
 
