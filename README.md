@@ -67,7 +67,7 @@ VRoot provides three core commands:
 | msrfs | - | Manually specify any RootFS directory to login, username optional (default: root) |
 | login | l | Quick login to containers in ~/.vroot/containers |
 | help | h | View help information |
-
+| -s, --shell | - | Specify login Shell (default: /bin/sh) |
 ### Additional Usage
 
 - Direct path passing: vroot [path] [username], compatible with legacy calling method.
@@ -80,6 +80,7 @@ vroot msrfs ~/debian-fs
 vroot login ubuntu-fs
 vroot l debian-fs root
 vroot ~/alpine-fs
+vroot l ubuntu-fs sensei -s bash
 vroot help
 vroot h
 ```
@@ -179,6 +180,7 @@ vroot 提供三种核心操作命令：
 | msrfs | - | 手动指定任意 RootFS 目录登录容器，用户名可选，默认为 root |
 | login | l | 快速登录存放于 ~/.vroot/containers 的容器 |
 | help | h | 查看帮助信息 |
+| -s, --shell | 指定登录 Shell（默认 /bin/sh） |
 
 ### 额外用法
 
@@ -192,6 +194,7 @@ vroot msrfs ~/debian-fs
 vroot login ubuntu-fs
 vroot l debian-fs root
 vroot ~/alpine-fs
+vroot l ubuntu-fs sensei -s bash
 vroot help
 vroot h
 ```

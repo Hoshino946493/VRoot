@@ -3,7 +3,7 @@
 # ============================================
 # VRoot - Termux PRoot 容器启动工具
 # 作者: Hoshino946493
-# 版本: 1.0.2
+# 版本: 1.0.3
 # ============================================
 
 # 配置文件路径
@@ -25,7 +25,7 @@ init_language() {
         echo "  2) en_US (English)"
         echo ""
         read -p "请输入选项 / Enter choice [1/2]: " lang_choice
-        
+
         case "$lang_choice" in
             1)
                 cat > "$LANG_CONFIG" << EOF
@@ -63,7 +63,7 @@ EOF
         esac
         clear
     fi
-    
+
     # 读取配置文件（只读取 vroot_lang 的值）
     if [ -f "$LANG_CONFIG" ]; then
         # 使用 grep 和 cut 提取 vroot_lang 的值
@@ -76,7 +76,7 @@ EOF
     else
         vroot_lang="1"
     fi
-    
+
     # 根据 vroot_lang 的值确定语言
     if [ "$vroot_lang" = "1" ]; then
         CURRENT_LANG="zh_CN"
@@ -200,6 +200,10 @@ print_step() {
     echo -e "\n${CYAN}>>>${NC} ${BOLD}$1${NC}"
 }
 
+print_header() {
+    echo -e "\n${WHITE}  $1${NC}\n"
+}
+
 # 创建容器目录
 mkdir -p "$CONFIG_DIR/containers" 2>/dev/null
 
@@ -235,15 +239,15 @@ show_help() {
 # 为旧版 Android 生成 resolv.conf
 add_resolv_conf() {
     local target_root="$1"
-    
+
     # 检查 getprop 命令是否可用
     if ! command -v getprop >/dev/null 2>&1; then
         return
     fi
-    
+
     local android_version
     android_version=$(getprop ro.build.version.release 2>/dev/null | cut -d. -f1 || echo "0")
-    
+
     if [[ "$android_version" =~ ^[0-9]+$ ]] && [ "$android_version" -lt 8 ] 2>/dev/null; then
         print_info "$STR_DNS_DETECT $android_version，$STR_DNS_GENERATE"
         {
@@ -259,51 +263,72 @@ add_resolv_conf() {
 
 # 启动 proot
 start_proot() {
-    local target_root="$1"
-    local target_user="$2"
+    local target_root=""
+    local target_user=""
+    local shell="/bin/sh"
+    
+    # 解析参数
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            -s|--shell)
+                shell="$2"
+                shift 2
+                ;;
+            *)
+                if [ -z "$target_root" ]; then
+                    target_root="$1"
+                elif [ -z "$target_user" ]; then
+                    target_user="$1"
+                fi
+                shift
+                ;;
+        esac
+    done
 
     # 检查目标目录
     if [ ! -d "$target_root" ]; then
         print_error "$STR_DIR_NOT_EXIST: '$target_root'"
         exit 1
     fi
-    
+
     print_success "$STR_ROOTFS: $target_root"
-    
+
     if [ -n "$target_user" ]; then
         print_info "$STR_USER: $target_user"
     else
         print_info "$STR_USER: $STR_DEFAULT_USER"
     fi
     
+    print_info "Shell: $shell"
+
     # 清理环境变量
     unset LD_PRELOAD
-    
+
     # 生成 DNS 配置
     add_resolv_conf "$target_root"
-    
+
     print_step "$STR_STARTING"
-    
+
     # 构建 proot 命令
     local proot_cmd="proot --link2symlink -0 -r \"$target_root/\""
     proot_cmd="$proot_cmd -b /dev/ -b /sys/ -b /proc/ -b /sdcard -b /storage -b \"$HOME\""
-    
+
     if [ -n "$target_user" ]; then
         # 指定用户
         proot_cmd="$proot_cmd -w \"/home/$target_user\""
         proot_cmd="$proot_cmd /usr/bin/env TMPDIR=/tmp HOME=\"/home/$target_user\""
         proot_cmd="$proot_cmd PREFIX=/usr SHELL=/bin/sh TERM=\"$TERM\" LANG=\"${LANG:-C}\""
         proot_cmd="$proot_cmd PATH=/bin:/usr/bin:/sbin:/usr/sbin"
-        proot_cmd="$proot_cmd /bin/su - \"$target_user\""
+        proot_cmd="$proot_cmd /bin/su - \"$target_user\" -s \"$shell\""
     else
         # root 用户
         proot_cmd="$proot_cmd -w /root"
         proot_cmd="$proot_cmd /usr/bin/env TMPDIR=/tmp HOME=/root"
         proot_cmd="$proot_cmd PREFIX=/usr SHELL=/bin/sh TERM=\"$TERM\" LANG=\"${LANG:-C}\""
         proot_cmd="$proot_cmd PATH=/bin:/usr/bin:/sbin:/usr/sbin"
-        proot_cmd="$proot_cmd /bin/sh"
+        proot_cmd="$proot_cmd /bin/sh -c \"exec $shell\""
     fi
-    
+
     eval exec "$proot_cmd"
 }
 
@@ -333,7 +358,7 @@ case "$1" in
             echo "$STR_EXAMPLE: $0 msrfs ~/ubuntu-fs sensei"
             exit 1
         fi
-        start_proot "$2" "$3"
+        start_proot "${@:2}"
         ;;
     login|l)
         if [ -z "$2" ]; then
@@ -346,7 +371,7 @@ case "$1" in
             print_error "$STR_CONTAINER_NOT_EXIST: '$2'"
             exit 1
         fi
-        start_proot "$container_path" "$3"
+        start_proot "$container_path" "${@:3}"
         ;;
     *)
         # 兼容旧用法：直接传路径
