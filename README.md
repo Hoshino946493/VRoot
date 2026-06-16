@@ -68,6 +68,8 @@ VRoot provides three core commands:
 | login | l | Quick login to containers in ~/.vroot/containers |
 | help | h | View help information |
 | -s, --shell | - | Specify login Shell (default: /bin/sh) |
+| passwd | - | Set or change container password |
+| rm-passwd | - | Remove container password |
 ### Additional Usage
 
 - Direct path passing: vroot [path] [username], compatible with legacy calling method.
@@ -81,6 +83,8 @@ vroot login ubuntu-fs
 vroot l debian-fs root
 vroot ~/alpine-fs
 vroot l ubuntu-fs sensei -s bash
+vroot passwd ubuntu-fs
+vroot rm-passwd ubuntu-fs
 vroot help
 vroot h
 ```
@@ -181,6 +185,8 @@ vroot 提供三种核心操作命令：
 | login | l | 快速登录存放于 ~/.vroot/containers 的容器 |
 | help | h | 查看帮助信息 |
 | -s, --shell | 指定登录 Shell（默认 /bin/sh） |
+| passwd | - | 设置或修改容器密码 |
+| rm-passwd | - | 删除容器密码 |
 
 ### 额外用法
 
@@ -195,6 +201,8 @@ vroot login ubuntu-fs
 vroot l debian-fs root
 vroot ~/alpine-fs
 vroot l ubuntu-fs sensei -s bash
+vroot passwd ubuntu-fs
+vroot rm-passwd ubuntu-fs
 vroot help
 vroot h
 ```
