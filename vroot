@@ -1,21 +1,15 @@
 #!/data/data/com.termux/files/usr/bin/bash -e
 
-# ============================================
 # VRoot - Termux PRoot 容器启动工具
 # 作者: Hoshino946493
-# 版本: 1.0.3
-# ============================================
+# 版本: 1.0.4
 
-# 配置文件路径
 readonly CONFIG_DIR="$HOME/.vroot"
 readonly LANG_CONFIG="$CONFIG_DIR/lang.conf"
 
-# 确保配置目录存在
 mkdir -p "$CONFIG_DIR"
 
-# 初始化语言配置
 init_language() {
-    # 如果配置文件不存在，提示用户选择语言
     if [ ! -f "$LANG_CONFIG" ]; then
         clear
         echo "VRoot - 首次运行配置 / First run setup"
@@ -64,20 +58,17 @@ EOF
         clear
     fi
 
-    # 读取配置文件（只读取 vroot_lang 的值）
     if [ -f "$LANG_CONFIG" ]; then
-        # 使用 grep 和 cut 提取 vroot_lang 的值
         local lang_value=$(grep "^vroot_lang=" "$LANG_CONFIG" | cut -d'=' -f2)
         if [ -n "$lang_value" ]; then
             vroot_lang="$lang_value"
         else
-            vroot_lang="1"  # 默认中文
+            vroot_lang="1"
         fi
     else
         vroot_lang="1"
     fi
 
-    # 根据 vroot_lang 的值确定语言
     if [ "$vroot_lang" = "1" ]; then
         CURRENT_LANG="zh_CN"
     else
@@ -85,12 +76,9 @@ EOF
     fi
 }
 
-# 加载语言配置
 init_language
 
-# 语言字符串定义
 if [ "$CURRENT_LANG" = "zh_CN" ]; then
-    # 中文语言包
     readonly STR_INFO="信息"
     readonly STR_OK="成功"
     readonly STR_WARN="警告"
@@ -123,8 +111,20 @@ if [ "$CURRENT_LANG" = "zh_CN" ]; then
     readonly STR_DNS_SUCCESS="DNS 配置已生成"
     readonly STR_NO_CONTAINERS="(无容器)"
     readonly STR_CHANGE_LANG="修改语言: 编辑 ~/.vroot/lang.conf，将 vroot_lang 改为 1(中文) 或 2(英文)"
+    readonly STR_PASSWD_DESC="设置或修改容器密码"
+    readonly STR_RM_PASSWD_DESC="删除容器密码"
+    readonly STR_ENTER_PASSWD="请输入密码"
+    readonly STR_RETYPE_PASSWD="请再次输入密码"
+    readonly STR_PASSWD_MISMATCH="两次密码不一致"
+    readonly STR_PASSWD_SET="密码已设置"
+    readonly STR_PASSWD_REMOVED="密码已删除"
+    readonly STR_PASSWD_PROMPT="请输入密码: "
+    readonly STR_PASSWD_WRONG="密码错误"
+    readonly STR_NO_PASSWD="该容器未设置密码"
+    readonly STR_CONTAINER_SPECIFY="请指定容器名"
+    readonly STR_SHELL_DESC="指定登录 Shell（默认 /bin/sh）"
+    readonly STR_PSET="设置一个密码"
 else
-    # English language pack
     readonly STR_INFO="INFO"
     readonly STR_OK="OK"
     readonly STR_WARN="WARN"
@@ -157,12 +157,23 @@ else
     readonly STR_DNS_SUCCESS="DNS configuration generated"
     readonly STR_NO_CONTAINERS="(No containers)"
     readonly STR_CHANGE_LANG="Change language: edit ~/.vroot/lang.conf, set vroot_lang to 1(Chinese) or 2(English)"
+    readonly STR_PASSWD_DESC="Set or change container password"
+    readonly STR_RM_PASSWD_DESC="Remove container password"
+    readonly STR_ENTER_PASSWD="Enter password"
+    readonly STR_RETYPE_PASSWD="Re-enter password"
+    readonly STR_PASSWD_MISMATCH="Passwords do not match"
+    readonly STR_PASSWD_SET="Password set successfully"
+    readonly STR_PASSWD_REMOVED="Password removed"
+    readonly STR_PASSWD_PROMPT="Enter password: "
+    readonly STR_PASSWD_WRONG="Wrong password"
+    readonly STR_NO_PASSWD="Container has no password set"
+    readonly STR_CONTAINER_SPECIFY="Please specify container name"
+    readonly STR_SHELL_DESC="Specify login Shell (default: /bin/sh)"
+    readonly STR_PSET="Set a password"
 fi
 
-# 强制启用彩色输出（Termux 都支持）
 USE_COLOR=true
 
-# 颜色定义
 if [ "$USE_COLOR" = true ]; then
     readonly RED='\033[0;31m'
     readonly GREEN='\033[0;32m'
@@ -179,7 +190,8 @@ else
     readonly RED='' GREEN='' YELLOW='' BLUE='' PURPLE='' CYAN='' WHITE='' GRAY='' BOLD='' DIM='' NC=''
 fi
 
-# 彩色输出函数
+readonly STR_SHELL="Shell"
+
 print_info() {
     echo -e "${BLUE}${BOLD}[$STR_INFO]${NC} $1"
 }
@@ -204,10 +216,8 @@ print_header() {
     echo -e "\n${WHITE}  $1${NC}\n"
 }
 
-# 创建容器目录
 mkdir -p "$CONFIG_DIR/containers" 2>/dev/null
 
-# 显示帮助信息
 show_help() {
     echo -e "${BOLD}${STR_DESCRIPTION}${NC}"
     echo -e ""
@@ -216,6 +226,9 @@ show_help() {
     echo -e "${BOLD}${STR_COMMANDS}:${NC}"
     echo -e "  ${GREEN}msrfs${NC} <${STR_ROOTFS}> [${STR_USER}]      ${STR_MSRFS_DESC}"
     echo -e "  ${GREEN}login${NC}, ${GREEN}l${NC} <${STR_EXAMPLE}> [${STR_USER}]     ${STR_LOGIN_DESC}"
+    echo -e "  ${GREEN}passwd${NC} <${STR_EXAMPLE}>                ${STR_PASSWD_DESC}"
+    echo -e "  ${GREEN}rm-passwd${NC} <${STR_EXAMPLE}>             ${STR_RM_PASSWD_DESC}"
+    echo -e "  ${GREEN}-s, --shell${NC} <SHELL>               ${STR_SHELL_DESC}"
     echo -e "  ${GREEN}h${NC}, ${GREEN}help${NC}                        ${STR_HELP_DESC}"
     echo -e ""
     echo -e "${BOLD}${STR_EXAMPLE}:${NC}"
@@ -228,6 +241,14 @@ show_help() {
     echo -e "  ${DIM}# ${STR_EXAMPLE_SHORT}${NC}"
     echo -e "  $0 l debian-fs root"
     echo -e ""
+    echo -e "  ${DIM}# ${STR_SHELL_DESC}${NC}"
+    echo -e "  $0 login ubuntu -s bash"
+    echo -e "  $0 msrfs ~/ubuntu-fs -s zsh"
+    echo -e ""
+    echo -e "  ${DIM}# ${STR_PSET}${NC}"
+    echo -e "  $0 passwd ubuntu"
+    echo -e "  $0 rm-passwd ubuntu"
+    echo -e ""
     echo -e "  ${DIM}# ${STR_EXAMPLE_LEGACY}${NC}"
     echo -e "  $0 ~/alpine-fs"
     echo -e ""
@@ -236,11 +257,9 @@ show_help() {
     echo -e "${DIM}${STR_CHANGE_LANG}${NC}"
 }
 
-# 为旧版 Android 生成 resolv.conf
 add_resolv_conf() {
     local target_root="$1"
 
-    # 检查 getprop 命令是否可用
     if ! command -v getprop >/dev/null 2>&1; then
         return
     fi
@@ -261,13 +280,69 @@ add_resolv_conf() {
     fi
 }
 
-# 启动 proot
+set_password() {
+    local container="$1"
+    local auth_file="$CONFIG_DIR/containers/$container/.vroot_auth"
+    
+    read -s -p "$STR_PASSWD_PROMPT" password
+    echo
+    read -s -p "$STR_RETYPE_PASSWD: " password2
+    echo
+    
+    if [ "$password" != "$password2" ]; then
+        print_error "$STR_PASSWD_MISMATCH"
+        return 1
+    fi
+    
+    if [ -z "$password" ]; then
+        print_warning "密码为空，已取消设置"
+        return 1
+    fi
+    
+    echo -n "$password" | base64 > "$auth_file"
+    print_success "$STR_PASSWD_SET"
+}
+
+remove_password() {
+    local container="$1"
+    local auth_file="$CONFIG_DIR/containers/$container/.vroot_auth"
+    
+    if [ ! -f "$auth_file" ]; then
+        print_warning "$STR_NO_PASSWD"
+        return 1
+    fi
+    
+    rm "$auth_file"
+    print_success "$STR_PASSWD_REMOVED"
+}
+
+verify_password() {
+    local container="$1"
+    local auth_file="$CONFIG_DIR/containers/$container/.vroot_auth"
+    
+    if [ ! -f "$auth_file" ]; then
+        return 0
+    fi
+    
+    local stored_base64=$(cat "$auth_file")
+    read -s -p "$STR_PASSWD_PROMPT" password
+    echo
+    
+    local input_base64=$(echo -n "$password" | base64)
+    
+    if [ "$input_base64" = "$stored_base64" ]; then
+        return 0
+    else
+        print_error "$STR_PASSWD_WRONG"
+        return 1
+    fi
+}
+
 start_proot() {
     local target_root=""
     local target_user=""
     local shell="/bin/sh"
     
-    # 解析参数
     while [[ $# -gt 0 ]]; do
         case "$1" in
             -s|--shell)
@@ -285,7 +360,6 @@ start_proot() {
         esac
     done
 
-    # 检查目标目录
     if [ ! -d "$target_root" ]; then
         print_error "$STR_DIR_NOT_EXIST: '$target_root'"
         exit 1
@@ -299,29 +373,22 @@ start_proot() {
         print_info "$STR_USER: $STR_DEFAULT_USER"
     fi
     
-    print_info "Shell: $shell"
+    print_info "$STR_SHELL: $shell"
 
-    # 清理环境变量
     unset LD_PRELOAD
-
-    # 生成 DNS 配置
     add_resolv_conf "$target_root"
-
     print_step "$STR_STARTING"
 
-    # 构建 proot 命令
     local proot_cmd="proot --link2symlink -0 -r \"$target_root/\""
     proot_cmd="$proot_cmd -b /dev/ -b /sys/ -b /proc/ -b /sdcard -b /storage -b \"$HOME\""
 
     if [ -n "$target_user" ]; then
-        # 指定用户
         proot_cmd="$proot_cmd -w \"/home/$target_user\""
         proot_cmd="$proot_cmd /usr/bin/env TMPDIR=/tmp HOME=\"/home/$target_user\""
         proot_cmd="$proot_cmd PREFIX=/usr SHELL=/bin/sh TERM=\"$TERM\" LANG=\"${LANG:-C}\""
         proot_cmd="$proot_cmd PATH=/bin:/usr/bin:/sbin:/usr/sbin"
         proot_cmd="$proot_cmd /bin/su - \"$target_user\" -s \"$shell\""
     else
-        # root 用户
         proot_cmd="$proot_cmd -w /root"
         proot_cmd="$proot_cmd /usr/bin/env TMPDIR=/tmp HOME=/root"
         proot_cmd="$proot_cmd PREFIX=/usr SHELL=/bin/sh TERM=\"$TERM\" LANG=\"${LANG:-C}\""
@@ -332,7 +399,6 @@ start_proot() {
     eval exec "$proot_cmd"
 }
 
-# 列出容器（仅用于提示）
 list_containers() {
     local containers_dir="$CONFIG_DIR/containers"
     if [ -d "$containers_dir" ]; then
@@ -346,7 +412,6 @@ list_containers() {
     fi
 }
 
-# 主逻辑
 case "$1" in
     h|help)
         show_help
@@ -371,10 +436,38 @@ case "$1" in
             print_error "$STR_CONTAINER_NOT_EXIST: '$2'"
             exit 1
         fi
+        if ! verify_password "$2"; then
+            exit 1
+        fi
         start_proot "$container_path" "${@:3}"
         ;;
+    passwd)
+        if [ -z "$2" ]; then
+            print_error "$STR_CONTAINER_SPECIFY"
+            list_containers
+            exit 1
+        fi
+        container_path="$CONFIG_DIR/containers/$2"
+        if [ ! -d "$container_path" ]; then
+            print_error "$STR_CONTAINER_NOT_EXIST: '$2'"
+            exit 1
+        fi
+        set_password "$2"
+        ;;
+    rm-passwd)
+        if [ -z "$2" ]; then
+            print_error "$STR_CONTAINER_SPECIFY"
+            list_containers
+            exit 1
+        fi
+        container_path="$CONFIG_DIR/containers/$2"
+        if [ ! -d "$container_path" ]; then
+            print_error "$STR_CONTAINER_NOT_EXIST: '$2'"
+            exit 1
+        fi
+        remove_password "$2"
+        ;;
     *)
-        # 兼容旧用法：直接传路径
         if [ -z "$1" ]; then
             show_help
             exit 0
